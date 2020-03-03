@@ -1,21 +1,50 @@
 /* eslint-disable no-console, no-process-exit */
 const michelin = require('./michelin');
+const links = [];
+const allRestaurants = [];
 
-async function sandbox (searchLink = 'https://guide.michelin.com/fr/fr/centre-val-de-loire/veuves/restaurant/l-auberge-de-la-croix-blanche') {
-  try {
-    console.log(`🕵️‍♀️  browsing ${searchLink} source`);
+var fs = require('fs');
 
-    const restaurant = await michelin.scrapeRestaurant(searchLink);
+async function sandbox () {
+	var i = 1;
+	while(true){
+	  try {
+		var link = "https://guide.michelin.com/fr/fr/restaurants/bib-gourmand/page/" + i;
+		console.log(`Browsing ${link} source`);
 
-    console.log(restaurant);
-    console.log('done');
-    process.exit(0);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
+		const restaurant = await michelin.scrapeRestaurant(link);
+		var length = restaurant.length;
+		if(length == 0)
+			break;
+		for(j = 0; j < length; j++){
+			links.push(restaurant.pop());
+		}
+		console.log('done');
+		i++;
+	  } catch (e) {
+		console.error(e);
+		process.exit(1);
+	  }
+	}
+	
+	var length = links.length;
+	for(k = 0; k < length; k++){
+		const infoRestaurant = await michelin.scrapeInfoRestaurant(links.pop());
+		console.log(infoRestaurant);
+		allRestaurants.push(infoRestaurant);
+	}
+	
+	var michelinJson = JSON.stringify(allRestaurants);
+	fs.writeFileSync("michelin.json", michelinJson, function(err) {
+		if (err) {
+			console.log(err);
+		}
+	});
+	process.exit(0);
 }
 
-const [,, searchLink] = process.argv;
 
-sandbox(searchLink);
+
+const [,, link] = process.argv;
+
+sandbox();

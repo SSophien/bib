@@ -1,25 +1,40 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-/**
- * Parse webpage restaurant
- * @param  {String} data - html response
- * @return {Object} restaurant
- */
 const parse = data => {
   const $ = cheerio.load(data);
-  const name = $('.section-main h2.restaurant-details__heading--title').text();
-  const experience = $('#experience-section > ul > li:nth-child(2)').text();
+  const name = $('h2.restaurant-details__heading--title').first().text();
+  const address = $('.restaurant-details__heading--list > li:not([class])').first().text();
 
-  return {name, experience};
+  return {name, address};
 };
 
-/**
- * Scrape a given restaurant url
- * @param  {String}  url
- * @return {Object} restaurant
- */
+const parsePage = data => {
+	const $ = cheerio.load(data);
+	const links = [];
+	
+	$('div.js-restaurant__list_item > a').each((i, element) => {
+		const link = $(element).attr('href');
+		links.push("https://guide.michelin.com" + link);
+	})
+	
+	return links;
+};
+
 module.exports.scrapeRestaurant = async url => {
+  const response = await axios(url);
+  const {data, status} = response;
+
+  if (status >= 200 && status < 300) {
+    return parsePage(data);
+  }
+
+  console.error(status);
+
+  return null;
+};
+
+module.exports.scrapeInfoRestaurant = async url => {
   const response = await axios(url);
   const {data, status} = response;
 
